@@ -1,0 +1,40 @@
+#!/bin/bash
+# Import photos from iPhone to local dir
+target=$HOME/Pictures/iPhoneImport
+#where iPhone is mounted
+source=$HOME/usr/mnt
+
+#do not change anything below
+tsFile=$target/.sync
+photodir=$source/DCIM
+photoDirPtn='*APPLE'
+photoFilePtn='*';
+
+#check on timestamp file
+if [ -e $tsFile ] ; then
+    lastsync=`stat -c%Y $tsFile`
+    echo "Copying files after $lastsync"
+else
+    echo "No sync marker in $target, copying all files"
+fi
+
+for d in $photodir/$photoDirPtn ; do
+    echo "[$d]"
+    for f in $d/$photoFilePtn ; do
+	# check lastmod date of $f
+	ts=`stat -c%Y $f`
+	t=`basename $f`
+	echo	"	$t"
+	if [[ $lastsync ]] ; then 
+	    if [[ "$lastsync" -ge "$ts" ]] ; then
+		echo "		skipping"
+		continue;
+	    fi
+	    echo "		overwriting"
+	fi
+	t=$(echo $t | tr '[:upper:]' '[:lower:]')
+	cp --update $f $target/$t 
+	touch -r "$f" $target/$t
+	touch -r "$f" "$tsFile"
+    done
+done
